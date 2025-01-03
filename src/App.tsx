@@ -11,6 +11,7 @@ import {
   Box,
   Button,
   ButtonBase,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -57,19 +58,24 @@ const StyledTodoContainer = styled(Box)(({ theme }) => ({
 
 const LOCAL_STORAGE_KEY = 'todos'
 
-const loadFromLocalStorage = (): string[] => {
+interface Todo {
+  text: string
+  completed: boolean
+}
+
+const loadFromLocalStorage = (): Todo[] => {
   const storedTodos = localStorage.getItem(LOCAL_STORAGE_KEY)
   return storedTodos ? JSON.parse(storedTodos) : []
 }
 
-const saveToLocalStorage = (todos: string[]) => {
+const saveToLocalStorage = (todos: Todo[]) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos))
 }
 
 const MyApp = () => {
   const { mode, setMode } = useColorScheme()
   const [value, setValue] = useState<string>('all')
-  const [todos, setTodos] = useState<string[]>(() => loadFromLocalStorage())
+  const [todos, setTodos] = useState<Todo[]>(() => loadFromLocalStorage())
   const [newTodo, setNewTodo] = useState<string>('')
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [editedTodo, setEditedTodo] = useState<string>('')
@@ -93,7 +99,10 @@ const MyApp = () => {
 
   const handleAddTodo = () => {
     if (newTodo.trim() !== '') {
-      setTodos((prevTodos) => [...prevTodos, newTodo.trim()])
+      setTodos((prevTodos) => [
+        ...prevTodos,
+        { text: newTodo.trim(), completed: false }
+      ])
       setNewTodo('')
       setIsDialogOpen(false)
     }
@@ -105,14 +114,14 @@ const MyApp = () => {
 
   const handleEditTodo = (index: number) => {
     setEditIndex(index)
-    setEditedTodo(todos[index])
+    setEditedTodo(todos[index].text)
   }
 
   const handleSaveEdit = () => {
     if (editIndex !== null && editedTodo.trim() !== '') {
       setTodos((prevTodos) => {
         const updatedTodos = [...prevTodos]
-        updatedTodos[editIndex] = editedTodo.trim()
+        updatedTodos[editIndex].text = editedTodo.trim()
         return updatedTodos
       })
       setEditIndex(null)
@@ -120,9 +129,23 @@ const MyApp = () => {
     }
   }
 
-  const filteredTodos = todos.filter((todo) =>
-    todo.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const handleToggleComplete = (index: number) => {
+    setTodos((prevTodos) =>
+      prevTodos.map((todo, i) =>
+        i === index ? { ...todo, completed: !todo.completed } : todo
+      )
+    )
+  }
+
+  const filteredTodos = todos
+    .filter((todo) => {
+      if (value === 'complete') return todo.completed
+      if (value === 'incomplete') return !todo.completed
+      return true
+    })
+    .filter((todo) =>
+      todo.text.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
   if (!mode) {
     return null
@@ -213,6 +236,10 @@ const MyApp = () => {
                   )
                 }
               >
+                <Checkbox
+                  checked={todo.completed}
+                  onChange={() => handleToggleComplete(index)}
+                />
                 {editIndex === index ? (
                   <TextField
                     fullWidth
@@ -220,7 +247,12 @@ const MyApp = () => {
                     onChange={(e) => setEditedTodo(e.target.value)}
                   />
                 ) : (
-                  <ListItemText primary={todo} />
+                  <ListItemText
+                    primary={todo.text}
+                    sx={{
+                      textDecoration: todo.completed ? 'line-through' : 'none'
+                    }}
+                  />
                 )}
               </ListItem>
             ))}
