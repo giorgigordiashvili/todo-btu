@@ -27,10 +27,14 @@ import {
   ThemeProvider
 } from '@mui/material'
 import { useColorScheme } from '@mui/material/styles'
+import axios from 'axios'
+import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import { BrowserRouter, Link, Route, Routes } from 'react-router'
 import empty from './assets/empty.png'
 import CustomOutlinedInput from './components/CustomOutlinedInput'
 import CustomSelect from './components/CustomSelect'
+import useWindowWidth from './hooks/useWindowWidth'
 import theme from './theme'
 
 const StyledButton = styled(ButtonBase)(({ theme }) => ({
@@ -56,13 +60,6 @@ const StyledTodoContainer = styled(Box)(({ theme }) => ({
   marginTop: '30px'
 }))
 
-const LOCAL_STORAGE_KEY = 'todos'
-
-interface Todo {
-  text: string
-  completed: boolean
-}
-
 const loadFromLocalStorage = (): Todo[] => {
   const storedTodos = localStorage.getItem(LOCAL_STORAGE_KEY)
   return storedTodos ? JSON.parse(storedTodos) : []
@@ -72,7 +69,31 @@ const saveToLocalStorage = (todos: Todo[]) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos))
 }
 
-const MyApp = () => {
+interface Todo {
+  text: string
+  completed: boolean
+}
+
+interface Product {
+  id: number
+  title: string
+  image: string
+  price: number
+}
+
+const LOCAL_STORAGE_KEY = 'todos'
+
+const Home: React.FC = () => (
+  <Box sx={{ textAlign: 'center', p: 5 }}>
+    <h1>Welcome to the SPA App</h1>
+    <nav>
+      <Link to="/todos">Go to Todos</Link> |{' '}
+      <Link to="/products">View Products</Link>
+    </nav>
+  </Box>
+)
+
+const Todos: React.FC = () => {
   const { mode, setMode } = useColorScheme()
   const [value, setValue] = useState<string>('all')
   const [todos, setTodos] = useState<Todo[]>(() => loadFromLocalStorage())
@@ -292,10 +313,47 @@ const MyApp = () => {
   )
 }
 
+const Products: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    axios
+      .get<Product[]>('https://fakestoreapi.com/products')
+      .then((res) => setProducts(res.data))
+  }, [])
+
+  return (
+    <Box sx={{ textAlign: 'center', p: 5 }}>
+      <h1>Products</h1>
+      {products.map((product) => (
+        <motion.div key={product.id} whileHover={{ scale: 1.1 }}>
+          <h3>{product.title}</h3>
+          <img src={product.image} alt={product.title} width={100} />
+          <p>{product.price} USD</p>
+        </motion.div>
+      ))}
+    </Box>
+  )
+}
+
 export default function ToggleColorMode() {
+  const windowWidth = useWindowWidth()
   return (
     <ThemeProvider theme={theme}>
-      <MyApp />
+      <BrowserRouter>
+        <Box>
+          <nav>
+            <Link to="/">Home</Link> | <Link to="/todos">Todos</Link> |{' '}
+            <Link to="/products">Products</Link>
+          </nav>
+          <p>Window Width: {windowWidth}px</p>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/todos" element={<Todos />} />
+            <Route path="/products" element={<Products />} />
+          </Routes>
+        </Box>
+      </BrowserRouter>
     </ThemeProvider>
   )
 }

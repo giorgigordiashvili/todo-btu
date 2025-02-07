@@ -13,8 +13,11 @@
     "@emotion/styled": "latest",
     "@mui/icons-material": "latest",
     "@mui/material": "latest",
+    "axios": "^1.7.9",
+    "framer-motion": "^12.4.0",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-router": "^7.1.5"
   },
   "devDependencies": {
     "@types/react": "latest",
